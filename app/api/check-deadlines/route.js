@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '../../../lib/supabaseAdmin';
-import { daysUntil, ALERT_THRESHOLDS, KIND_LABELS } from '../../../lib/deadlines';
+import { daysUntil, ALERT_THRESHOLDS, DAILY_ALERT_THRESHOLD, KIND_LABELS } from '../../../lib/deadlines';
 import twilio from 'twilio';
 
 // This route is meant to be triggered once a day by a scheduler
@@ -37,17 +37,21 @@ export async function GET(request) {
       .filter(Boolean)
       .map(Number);
 
-    // Find the tightest threshold this deadline has just crossed that we
-    // haven't already alerted on for this due_date.
-    const dueThreshold = ALERT_THRESHOLDS.find(
-      (t) => days <= t && !alreadySent.includes(t)
-    );
-    if (dueThreshold === undefined) continue;
+    // Inside the daily window, alert every day the cron runs (no dedup).
+    // Otherwise, only alert once per ALERT_THRESHOLDS crossing.
+    const isDaily = days <= DAILY_ALERT_THRESHOLD;
+    const dueThreshold = isDaily
+      ? undefined
+      : ALERT_THRESHOLDS.find((t) => days <= t && !alreadySent.includes(t));
+    if (!isDaily && dueThreshold === undefined) continue;
 
     const profile = d.trucks?.profiles;
     const truckName = d.trucks?.nickname || 'your truck';
     const label = KIND_LABELS[d.kind] || d.kind;
-    const message = `Greenlight: ${label} for ${truckName} is due in ${days} day${days === 1 ? '' : 's'} (${d.due_date}). Renew it to stay on the road.`;
+    const message =
+      days < 0
+        ? `Greenlight: ${label} for ${truckName} is ${Math.abs(days)} day${Math.abs(days) === 1 ? '' : 's'} OVERDUE (was due ${d.due_date}). Renew it now.`
+        : `Greenlight: ${label} for ${truckName} is due in ${days} day${days === 1 ? '' : 's'} (${d.due_date}). Renew it to stay on the road.`;
 
     if (twilioClient && profile?.sms_opt_in && profile?.phone) {
       try {
@@ -63,13 +67,16 @@ export async function GET(request) {
     }
 
     // Record that we've alerted at this threshold so we don't repeat it
-    // every day until the truck's status changes color again.
-    await supabaseAdmin
-      .from('deadlines')
-      .update({
-        alerted_thresholds: [...alreadySent, dueThreshold].join(','),
-      })
-      .eq('id', d.id);
+    // every day until the truck's status changes color again. Daily-window
+    // alerts aren't recorded — they're meant to fire every day regardless.
+    if (dueThreshold !== undefined) {
+      await supabaseAdmin
+        .from('deadlines')
+        .update({
+          alerted_thresholds: [...alreadySent, dueThreshold].join(','),
+        })
+        .eq('id', d.id);
+    }
   }
 
   return NextResponse.json({ checked: deadlines.length, alertsSent: sent });

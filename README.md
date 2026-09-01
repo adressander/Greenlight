@@ -9,9 +9,11 @@ fast — no billing yet, free tier only, real accounts and real SMS.
 - **Signup/login** — passwordless magic-link email (Supabase Auth). No
   passwords to manage, low friction for a non-technical audience.
 - **Dashboard** — add a truck, set its deadline dates, see color-coded
-  status (green / yellow / red), mark things renewed.
+  status (green until 60 days out, yellow until 15, red inside 15), mark
+  things renewed.
 - **Real SMS alerts** — a daily cron job checks every deadline and texts
-  the truck's owner at 90 / 60 / 30 / 15 days out via Twilio.
+  the truck's owner once at 90 / 60 / 30 / 15 days out, then every day
+  starting 5 days out (including after the deadline passes) via Twilio.
 - **Database with proper access control** — Supabase Postgres with Row
   Level Security, so users can only ever see their own trucks.
 

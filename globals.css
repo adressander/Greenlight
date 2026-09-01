@@ -1,0 +1,91 @@
+:root {
+  --asphalt: #1B1E21;
+  --asphalt-2: #24282C;
+  --asphalt-3: #2E3338;
+  --paper: #F3EFE6;
+  --paper-dim: #C9C4B8;
+  --steel: #7D8791;
+  --safety-yellow: #F5B400;
+  --signal-green: #3F8B5C;
+  --signal-green-bright: #57B378;
+  --alert-red: #C1442D;
+  --hairline: rgba(243, 239, 230, 0.14);
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--asphalt);
+  color: var(--paper);
+  font-family: 'IBM Plex Sans', sans-serif;
+  line-height: 1.5;
+}
+
+.display {
+  font-family: 'Oswald', sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.mono {
+  font-family: 'IBM Plex Mono', monospace;
+}
+
+a { color: inherit; }
+
+input, button, select {
+  font-family: inherit;
+  font-size: 1rem;
+}
+
+input {
+  background: var(--asphalt);
+  border: 1px solid var(--hairline);
+  color: var(--paper);
+  padding: 12px 14px;
+  border-radius: 4px;
+  width: 100%;
+}
+input:focus-visible {
+  outline: 2px solid var(--signal-green-bright);
+  outline-offset: 2px;
+}
+
+.btn-primary {
+  background: var(--signal-green-bright);
+  color: var(--asphalt);
+  font-weight: 700;
+  font-family: 'Oswald', sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  font-size: 0.9rem;
+  padding: 13px 22px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.btn-primary:hover { transform: translateY(-1px); }
+.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.btn-secondary {
+  background: transparent;
+  color: var(--paper-dim);
+  border: 1px solid var(--hairline);
+  border-radius: 4px;
+  padding: 10px 16px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.card {
+  background: var(--asphalt-2);
+  border: 1px solid var(--hairline);
+  border-radius: 8px;
+  padding: 24px;
+}
+
+.pip { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.pip-green { background: var(--signal-green-bright); box-shadow: 0 0 8px var(--signal-green-bright); }
+.pip-yellow { background: var(--safety-yellow); box-shadow: 0 0 8px var(--safety-yellow); }
+.pip-red { background: var(--alert-red); box-shadow: 0 0 8px var(--alert-red); }

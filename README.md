@@ -11,7 +11,7 @@ fast — no billing yet, free tier only, real accounts and real SMS.
 - **Dashboard** — add a truck, set its deadline dates, see color-coded
   status (green / yellow / red), mark things renewed.
 - **Real SMS alerts** — a daily cron job checks every deadline and texts
-  the truck's owner at 30 / 14 / 7 / 1 days out via Twilio.
+  the truck's owner at 90 / 60 / 30 / 15 days out via Twilio.
 - **Database with proper access control** — Supabase Postgres with Row
   Level Security, so users can only ever see their own trucks.
 

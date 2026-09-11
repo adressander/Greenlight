@@ -5,6 +5,7 @@ import { cookies } from 'next/headers';
 export async function GET(request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get('code');
+  const type = searchParams.get('type');
 
   if (code) {
     const cookieStore = cookies();
@@ -22,5 +23,8 @@ export async function GET(request) {
     await supabase.auth.exchangeCodeForSession(code);
   }
 
-  return NextResponse.redirect(`${origin}/dashboard`);
+  // Password-recovery links land here too — send those to the page where
+  // the user actually sets a new password, instead of straight to the app.
+  const destination = type === 'recovery' ? '/reset-password' : '/dashboard';
+  return NextResponse.redirect(`${origin}${destination}`);
 }

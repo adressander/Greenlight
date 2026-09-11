@@ -18,15 +18,29 @@ export async function GET(request) {
       ? twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN)
       : null;
 
-  // Pull every deadline along with the truck it belongs to and that
-  // truck owner's phone/SMS opt-in.
+  // Pull every deadline along with the truck it belongs to. trucks.user_id
+  // and profiles.id both reference auth.users independently (no direct FK
+  // between trucks and profiles), so Supabase can't embed profiles in this
+  // query directly — fetch them separately and join in JS below.
   const { data: deadlines, error } = await supabaseAdmin
     .from('deadlines')
-    .select('id, kind, due_date, alerted_thresholds, truck_id, trucks(nickname, user_id, profiles(phone, sms_opt_in))');
+    .select('id, kind, due_date, alerted_thresholds, truck_id, trucks(nickname, user_id)');
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
+
+  const userIds = [...new Set(deadlines.map((d) => d.trucks?.user_id).filter(Boolean))];
+  const { data: profiles, error: profilesError } = await supabaseAdmin
+    .from('profiles')
+    .select('id, phone, sms_opt_in')
+    .in('id', userIds);
+
+  if (profilesError) {
+    return NextResponse.json({ error: profilesError.message }, { status: 500 });
+  }
+
+  const profileByUserId = Object.fromEntries(profiles.map((p) => [p.id, p]));
 
   let sent = 0;
 
@@ -45,7 +59,7 @@ export async function GET(request) {
       : ALERT_THRESHOLDS.find((t) => days <= t && !alreadySent.includes(t));
     if (!isDaily && dueThreshold === undefined) continue;
 
-    const profile = d.trucks?.profiles;
+    const profile = profileByUserId[d.trucks?.user_id];
     const truckName = d.trucks?.nickname || 'your truck';
     const label = KIND_LABELS[d.kind] || d.kind;
     const message =

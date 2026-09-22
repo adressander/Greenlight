@@ -6,12 +6,20 @@ import { supabase } from '../../lib/supabaseClient';
 
 export default function LoginPage() {
   const router = useRouter();
-  const [mode, setMode] = useState('login'); // 'login' | 'signup' | 'forgot'
+  const [mode, setMode] = useState('login'); // 'login' | 'signup' | 'forgot-email' | 'forgot-code'
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [code, setCode] = useState('');
+  const [newPassword, setNewPassword] = useState('');
   const [message, setMessage] = useState(null);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
+
+  function switchMode(newMode) {
+    setMode(newMode);
+    setError(null);
+    setMessage(null);
+  }
 
   async function handleLogin(e) {
     e.preventDefault();
@@ -46,30 +54,58 @@ export default function LoginPage() {
       router.push('/dashboard');
     } else {
       setMessage('Account created. Check your email for a confirmation link, then log in below.');
-      setMode('login');
+      switchMode('login');
     }
   }
 
-  async function handleForgotPassword(e) {
+  // Step 1 of password reset: email a one-time code (not a link — links get
+  // silently pre-fetched and burned by some mail providers' security
+  // scanners before the user ever opens them).
+  async function handleRequestCode(e) {
     e.preventDefault();
     setLoading(true);
     setError(null);
     setMessage(null);
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/reset-password`,
-    });
+    const { error } = await supabase.auth.resetPasswordForEmail(email);
     setLoading(false);
     if (error) {
       setError(error.message);
     } else {
-      setMessage('Check your email for a link to set your password.');
+      setMessage(`Sent a 6-digit code to ${email}.`);
+      setMode('forgot-code');
+    }
+  }
+
+  // Step 2: verify the code, then set the new password.
+  async function handleResetWithCode(e) {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+    setMessage(null);
+    const { error: verifyError } = await supabase.auth.verifyOtp({
+      email,
+      token: code,
+      type: 'recovery',
+    });
+    if (verifyError) {
+      setLoading(false);
+      setError(verifyError.message);
+      return;
+    }
+    const { error: updateError } = await supabase.auth.updateUser({ password: newPassword });
+    setLoading(false);
+    if (updateError) {
+      setError(updateError.message);
+    } else {
+      router.push('/dashboard');
     }
   }
 
   const titles = {
     login: 'Log in',
     signup: 'Create your account',
-    forgot: 'Reset your password',
+    'forgot-email': 'Reset your password',
+    'forgot-code': 'Enter your code',
   };
 
   return (
@@ -83,66 +119,115 @@ export default function LoginPage() {
         <p style={{ color: 'var(--signal-green-bright)', marginBottom: 16, fontSize: '0.9rem' }}>{message}</p>
       )}
 
-      <form onSubmit={mode === 'login' ? handleLogin : mode === 'signup' ? handleSignup : handleForgotPassword}>
-        <label htmlFor="email" style={{ display: 'block', marginBottom: 8, fontSize: '0.9rem', color: 'var(--paper-dim)' }}>
-          Email address
-        </label>
-        <input
-          id="email"
-          type="email"
-          required
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="you@yourfleet.com"
-          style={{ marginBottom: 16 }}
-        />
+      {(mode === 'login' || mode === 'signup') && (
+        <form onSubmit={mode === 'login' ? handleLogin : handleSignup}>
+          <label htmlFor="email" style={{ display: 'block', marginBottom: 8, fontSize: '0.9rem', color: 'var(--paper-dim)' }}>
+            Email address
+          </label>
+          <input
+            id="email"
+            type="email"
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="you@yourfleet.com"
+            style={{ marginBottom: 16 }}
+          />
+          <label htmlFor="password" style={{ display: 'block', marginBottom: 8, fontSize: '0.9rem', color: 'var(--paper-dim)' }}>
+            Password
+          </label>
+          <input
+            id="password"
+            type="password"
+            required
+            minLength={6}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="At least 6 characters"
+            style={{ marginBottom: 16 }}
+          />
+          <button className="btn-primary" type="submit" disabled={loading} style={{ width: '100%', marginBottom: 16 }}>
+            {loading ? 'Please wait…' : mode === 'login' ? 'Log in' : 'Create account'}
+          </button>
+          {error && (
+            <p style={{ color: 'var(--alert-red)', marginBottom: 16, fontSize: '0.9rem' }}>{error}</p>
+          )}
+        </form>
+      )}
 
-        {mode !== 'forgot' && (
-          <>
-            <label htmlFor="password" style={{ display: 'block', marginBottom: 8, fontSize: '0.9rem', color: 'var(--paper-dim)' }}>
-              Password
-            </label>
-            <input
-              id="password"
-              type="password"
-              required
-              minLength={6}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="At least 6 characters"
-              style={{ marginBottom: 16 }}
-            />
-          </>
-        )}
+      {mode === 'forgot-email' && (
+        <form onSubmit={handleRequestCode}>
+          <label htmlFor="email" style={{ display: 'block', marginBottom: 8, fontSize: '0.9rem', color: 'var(--paper-dim)' }}>
+            Email address
+          </label>
+          <input
+            id="email"
+            type="email"
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="you@yourfleet.com"
+            style={{ marginBottom: 16 }}
+          />
+          <button className="btn-primary" type="submit" disabled={loading} style={{ width: '100%', marginBottom: 16 }}>
+            {loading ? 'Sending…' : 'Send reset code'}
+          </button>
+          {error && (
+            <p style={{ color: 'var(--alert-red)', marginBottom: 16, fontSize: '0.9rem' }}>{error}</p>
+          )}
+        </form>
+      )}
 
-        <button className="btn-primary" type="submit" disabled={loading} style={{ width: '100%', marginBottom: 16 }}>
-          {loading
-            ? 'Please wait…'
-            : mode === 'login'
-            ? 'Log in'
-            : mode === 'signup'
-            ? 'Create account'
-            : 'Send reset link'}
-        </button>
-
-        {error && (
-          <p style={{ color: 'var(--alert-red)', marginBottom: 16, fontSize: '0.9rem' }}>{error}</p>
-        )}
-      </form>
+      {mode === 'forgot-code' && (
+        <form onSubmit={handleResetWithCode}>
+          <label htmlFor="code" style={{ display: 'block', marginBottom: 8, fontSize: '0.9rem', color: 'var(--paper-dim)' }}>
+            6-digit code
+          </label>
+          <input
+            id="code"
+            type="text"
+            inputMode="numeric"
+            required
+            value={code}
+            onChange={(e) => setCode(e.target.value)}
+            placeholder="123456"
+            style={{ marginBottom: 16 }}
+          />
+          <label htmlFor="newPassword" style={{ display: 'block', marginBottom: 8, fontSize: '0.9rem', color: 'var(--paper-dim)' }}>
+            New password
+          </label>
+          <input
+            id="newPassword"
+            type="password"
+            required
+            minLength={6}
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+            placeholder="At least 6 characters"
+            style={{ marginBottom: 16 }}
+          />
+          <button className="btn-primary" type="submit" disabled={loading} style={{ width: '100%', marginBottom: 16 }}>
+            {loading ? 'Saving…' : 'Set new password'}
+          </button>
+          {error && (
+            <p style={{ color: 'var(--alert-red)', marginBottom: 16, fontSize: '0.9rem' }}>{error}</p>
+          )}
+        </form>
+      )}
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8, fontSize: '0.85rem' }}>
         {mode === 'login' && (
           <>
-            <button className="btn-secondary" type="button" onClick={() => { setMode('signup'); setError(null); setMessage(null); }}>
+            <button className="btn-secondary" type="button" onClick={() => switchMode('signup')}>
               Need an account? Sign up
             </button>
-            <button className="btn-secondary" type="button" onClick={() => { setMode('forgot'); setError(null); setMessage(null); }}>
+            <button className="btn-secondary" type="button" onClick={() => switchMode('forgot-email')}>
               Forgot password?
             </button>
           </>
         )}
         {mode !== 'login' && (
-          <button className="btn-secondary" type="button" onClick={() => { setMode('login'); setError(null); setMessage(null); }}>
+          <button className="btn-secondary" type="button" onClick={() => switchMode('login')}>
             Back to log in
           </button>
         )}

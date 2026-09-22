@@ -4,8 +4,8 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '../../lib/supabaseClient';
 import { daysUntil, statusFor, KIND_LABELS } from '../../lib/deadlines';
+import Link from 'next/link';
 import AddTruckForm from './AddTruckForm';
-import SmsSettings from './SmsSettings';
 
 export default function Dashboard() {
   const router = useRouter();
@@ -63,12 +63,13 @@ export default function Dashboard() {
     <main style={{ maxWidth: 860, margin: '0 auto', padding: '40px 24px 80px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 36 }}>
         <div className="display" style={{ fontSize: '1.3rem' }}>Greenlight</div>
-        <button className="btn-secondary" onClick={handleSignOut}>Sign out</button>
+        <div style={{ display: 'flex', gap: 10 }}>
+          <Link href="/dashboard/settings"><button className="btn-secondary">Settings</button></Link>
+          <button className="btn-secondary" onClick={handleSignOut}>Sign out</button>
+        </div>
       </div>
 
-      <SmsSettings />
-
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '32px 0 18px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '0 0 18px' }}>
         <h1 style={{ fontSize: '1.4rem' }}>Your trucks</h1>
         <button className="btn-primary" onClick={() => setShowAddTruck(true)}>+ Add a truck</button>
       </div>

@@ -2,8 +2,24 @@
 
 create table if not exists profiles (
   id uuid references auth.users on delete cascade primary key,
-  phone text,
-  sms_opt_in boolean default false,
+  business_name text,
+  business_address text,
+  business_phone text,
+  -- Reminder schedule overrides. Null means "use the app defaults"
+  -- (90/60/30/15 day one-time alerts, daily reminders from 5 days out).
+  alert_thresholds text,
+  daily_alert_threshold int,
+  -- Billing (Stripe).
+  stripe_customer_id text,
+  subscription_status text,
+  created_at timestamptz default now()
+);
+
+create table if not exists alert_phones (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references auth.users on delete cascade not null,
+  phone text not null,
+  label text,
   created_at timestamptz default now()
 );
 
@@ -28,11 +44,15 @@ create table if not exists deadlines (
 
 -- Row Level Security: users only ever see their own data.
 alter table profiles enable row level security;
+alter table alert_phones enable row level security;
 alter table trucks enable row level security;
 alter table deadlines enable row level security;
 
 create policy "own profile" on profiles
   for all using (auth.uid() = id);
+
+create policy "own alert phones" on alert_phones
+  for all using (auth.uid() = user_id);
 
 create policy "own trucks" on trucks
   for all using (auth.uid() = user_id);

@@ -1,6 +1,11 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '../../../lib/supabaseAdmin';
-import { daysUntil, ALERT_THRESHOLDS, DAILY_ALERT_THRESHOLD, KIND_LABELS } from '../../../lib/deadlines';
+import {
+  daysUntil,
+  KIND_LABELS,
+  resolveAlertThresholds,
+  resolveDailyAlertThreshold,
+} from '../../../lib/deadlines';
 import twilio from 'twilio';
 
 // This route is meant to be triggered once a day by a scheduler
@@ -31,16 +36,30 @@ export async function GET(request) {
   }
 
   const userIds = [...new Set(deadlines.map((d) => d.trucks?.user_id).filter(Boolean))];
+
   const { data: profiles, error: profilesError } = await supabaseAdmin
     .from('profiles')
-    .select('id, phone, sms_opt_in')
+    .select('id, alert_thresholds, daily_alert_threshold')
     .in('id', userIds);
 
   if (profilesError) {
     return NextResponse.json({ error: profilesError.message }, { status: 500 });
   }
 
+  const { data: alertPhones, error: phonesError } = await supabaseAdmin
+    .from('alert_phones')
+    .select('user_id, phone')
+    .in('user_id', userIds);
+
+  if (phonesError) {
+    return NextResponse.json({ error: phonesError.message }, { status: 500 });
+  }
+
   const profileByUserId = Object.fromEntries(profiles.map((p) => [p.id, p]));
+  const phonesByUserId = {};
+  for (const { user_id, phone } of alertPhones) {
+    (phonesByUserId[user_id] ??= []).push(phone);
+  }
 
   let sent = 0;
 
@@ -51,15 +70,19 @@ export async function GET(request) {
       .filter(Boolean)
       .map(Number);
 
+    const profile = profileByUserId[d.trucks?.user_id];
+    const alertThresholds = resolveAlertThresholds(profile);
+    const dailyAlertThreshold = resolveDailyAlertThreshold(profile);
+
     // Inside the daily window, alert every day the cron runs (no dedup).
-    // Otherwise, only alert once per ALERT_THRESHOLDS crossing.
-    const isDaily = days <= DAILY_ALERT_THRESHOLD;
+    // Otherwise, only alert once per threshold crossing.
+    const isDaily = days <= dailyAlertThreshold;
     const dueThreshold = isDaily
       ? undefined
-      : ALERT_THRESHOLDS.find((t) => days <= t && !alreadySent.includes(t));
+      : alertThresholds.find((t) => days <= t && !alreadySent.includes(t));
     if (!isDaily && dueThreshold === undefined) continue;
 
-    const profile = profileByUserId[d.trucks?.user_id];
+    const phones = phonesByUserId[d.trucks?.user_id] || [];
     const truckName = d.trucks?.nickname || 'your truck';
     const label = KIND_LABELS[d.kind] || d.kind;
     const message =
@@ -67,16 +90,18 @@ export async function GET(request) {
         ? `Greenlight: ${label} for ${truckName} is ${Math.abs(days)} day${Math.abs(days) === 1 ? '' : 's'} OVERDUE (was due ${d.due_date}). Renew it now.`
         : `Greenlight: ${label} for ${truckName} is due in ${days} day${days === 1 ? '' : 's'} (${d.due_date}). Renew it to stay on the road.`;
 
-    if (twilioClient && profile?.sms_opt_in && profile?.phone) {
-      try {
-        await twilioClient.messages.create({
-          to: profile.phone,
-          from: process.env.TWILIO_FROM_NUMBER,
-          body: message,
-        });
-        sent += 1;
-      } catch (smsErr) {
-        console.error('Twilio send failed for deadline', d.id, smsErr.message);
+    if (twilioClient && phones.length > 0) {
+      for (const phone of phones) {
+        try {
+          await twilioClient.messages.create({
+            to: phone,
+            from: process.env.TWILIO_FROM_NUMBER,
+            body: message,
+          });
+          sent += 1;
+        } catch (smsErr) {
+          console.error('Twilio send failed for deadline', d.id, 'to', phone, smsErr.message);
+        }
       }
     }
 

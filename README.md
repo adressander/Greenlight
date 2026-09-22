@@ -6,14 +6,21 @@ fast — no billing yet, free tier only, real accounts and real SMS.
 
 ## What's actually in here
 
-- **Signup/login** — passwordless magic-link email (Supabase Auth). No
-  passwords to manage, low friction for a non-technical audience.
+- **Signup/login** — email + password (Supabase Auth). Sign-up confirmation
+  and password reset both use a 6-digit code typed into the app, not a
+  clickable link — some mail providers (Outlook/Microsoft 365 in
+  particular) silently pre-fetch and burn one-time links before the user
+  ever opens them, so codes are the reliable choice here.
 - **Dashboard** — add a truck, set its deadline dates, see color-coded
   status (green until 60 days out, yellow until 15, red inside 15), mark
   things renewed.
+- **Settings** — business info, multiple SMS alert phone numbers (every
+  number gets every alert), and a per-account reminder schedule override
+  (defaults to the app-wide schedule below).
 - **Real SMS alerts** — a daily cron job checks every deadline and texts
-  the truck's owner once at 90 / 60 / 30 / 15 days out, then every day
-  starting 5 days out (including after the deadline passes) via Twilio.
+  every alert phone on the account once at 90 / 60 / 30 / 15 days out
+  by default, then every day starting 5 days out (including after the
+  deadline passes) via Twilio.
 - **Database with proper access control** — Supabase Postgres with Row
   Level Security, so users can only ever see their own trucks.
 
@@ -26,9 +33,10 @@ Add these once people are actually using the free version.
 ### 1. Supabase (auth + database) — free tier is enough
 1. Create a project at [supabase.com](https://supabase.com).
 2. In the SQL Editor, paste and run everything in `supabase/schema.sql`.
-3. Go to Authentication → Providers → make sure **Email** is enabled, and
-   under Authentication → URL Configuration add your site URL (you'll get
-   this in step 3) plus `/auth/callback` as a redirect URL.
+3. Go to Authentication → Providers → make sure **Email** is enabled. Under
+   Authentication → Emails → Templates, edit **Confirm signup** and **Reset
+   Password** to use `{{ .Token }}` (a 6-digit code) instead of the default
+   `{{ .ConfirmationURL }}` link.
 4. Copy your **Project URL**, **anon public key**, and **service_role key**
    from Project Settings → API. You'll need all three.
 

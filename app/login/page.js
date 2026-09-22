@@ -6,7 +6,7 @@ import { supabase } from '../../lib/supabaseClient';
 
 export default function LoginPage() {
   const router = useRouter();
-  const [mode, setMode] = useState('login'); // 'login' | 'signup' | 'forgot-email' | 'forgot-code'
+  const [mode, setMode] = useState('login'); // 'login' | 'signup' | 'signup-code' | 'forgot-email' | 'forgot-code'
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [code, setCode] = useState('');
@@ -39,13 +39,7 @@ export default function LoginPage() {
     setLoading(true);
     setError(null);
     setMessage(null);
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
-      },
-    });
+    const { data, error } = await supabase.auth.signUp({ email, password });
     setLoading(false);
     if (error) {
       setError(error.message);
@@ -53,8 +47,28 @@ export default function LoginPage() {
       // Email confirmation is off — already logged in.
       router.push('/dashboard');
     } else {
-      setMessage('Account created. Check your email for a confirmation link, then log in below.');
-      switchMode('login');
+      setMessage(`Sent a 6-digit code to ${email}.`);
+      setMode('signup-code');
+    }
+  }
+
+  // Verify the sign-up code (same reasoning as the reset-password code:
+  // avoids a clickable link that some mail providers silently pre-fetch
+  // and burn before the user ever opens the email).
+  async function handleVerifySignupCode(e) {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+    const { error } = await supabase.auth.verifyOtp({
+      email,
+      token: code,
+      type: 'signup',
+    });
+    setLoading(false);
+    if (error) {
+      setError(error.message);
+    } else {
+      router.push('/dashboard');
     }
   }
 
@@ -104,6 +118,7 @@ export default function LoginPage() {
   const titles = {
     login: 'Log in',
     signup: 'Create your account',
+    'signup-code': 'Enter your code',
     'forgot-email': 'Reset your password',
     'forgot-code': 'Enter your code',
   };
@@ -148,6 +163,30 @@ export default function LoginPage() {
           />
           <button className="btn-primary" type="submit" disabled={loading} style={{ width: '100%', marginBottom: 16 }}>
             {loading ? 'Please wait…' : mode === 'login' ? 'Log in' : 'Create account'}
+          </button>
+          {error && (
+            <p style={{ color: 'var(--alert-red)', marginBottom: 16, fontSize: '0.9rem' }}>{error}</p>
+          )}
+        </form>
+      )}
+
+      {mode === 'signup-code' && (
+        <form onSubmit={handleVerifySignupCode}>
+          <label htmlFor="signupCode" style={{ display: 'block', marginBottom: 8, fontSize: '0.9rem', color: 'var(--paper-dim)' }}>
+            6-digit code
+          </label>
+          <input
+            id="signupCode"
+            type="text"
+            inputMode="numeric"
+            required
+            value={code}
+            onChange={(e) => setCode(e.target.value)}
+            placeholder="123456"
+            style={{ marginBottom: 16 }}
+          />
+          <button className="btn-primary" type="submit" disabled={loading} style={{ width: '100%', marginBottom: 16 }}>
+            {loading ? 'Verifying…' : 'Verify and continue'}
           </button>
           {error && (
             <p style={{ color: 'var(--alert-red)', marginBottom: 16, fontSize: '0.9rem' }}>{error}</p>

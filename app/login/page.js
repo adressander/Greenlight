@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '../../lib/supabaseClient';
+import { TruckMark } from '../components/icons';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -125,18 +126,19 @@ export default function LoginPage() {
 
   return (
     <main style={{ maxWidth: 420, margin: '0 auto', padding: '90px 24px' }}>
-      <div className="display" style={{ fontSize: '1.4rem', marginBottom: 8 }}>
-        Greenlight
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+        <TruckMark size={22} />
+        <span className="display" style={{ fontSize: '1.4rem', color: 'var(--gl-green)' }}>Greenlight</span>
       </div>
-      <h1 style={{ fontSize: '1.6rem', marginBottom: 24 }}>{titles[mode]}</h1>
+      <h1 className="display" style={{ fontSize: '1.6rem', marginBottom: 24 }}>{titles[mode]}</h1>
 
       {message && (
-        <p style={{ color: 'var(--signal-green-bright)', marginBottom: 16, fontSize: '0.9rem' }}>{message}</p>
+        <p style={{ color: 'var(--gl-green)', marginBottom: 16, fontSize: '0.9rem' }}>{message}</p>
       )}
 
       {(mode === 'login' || mode === 'signup') && (
         <form onSubmit={mode === 'login' ? handleLogin : handleSignup}>
-          <label htmlFor="email" style={{ display: 'block', marginBottom: 8, fontSize: '0.9rem', color: 'var(--paper-dim)' }}>
+          <label htmlFor="email" style={{ display: 'block', marginBottom: 8, fontSize: '0.9rem', color: 'var(--gl-text-muted)' }}>
             Email address
           </label>
           <input
@@ -148,7 +150,7 @@ export default function LoginPage() {
             placeholder="you@yourfleet.com"
             style={{ marginBottom: 16 }}
           />
-          <label htmlFor="password" style={{ display: 'block', marginBottom: 8, fontSize: '0.9rem', color: 'var(--paper-dim)' }}>
+          <label htmlFor="password" style={{ display: 'block', marginBottom: 8, fontSize: '0.9rem', color: 'var(--gl-text-muted)' }}>
             Password
           </label>
           <input
@@ -161,18 +163,18 @@ export default function LoginPage() {
             placeholder="At least 6 characters"
             style={{ marginBottom: 16 }}
           />
-          <button className="btn-primary" type="submit" disabled={loading} style={{ width: '100%', marginBottom: 16 }}>
+          <button className="gl-btn-primary" type="submit" disabled={loading} style={{ width: '100%', marginBottom: 16 }}>
             {loading ? 'Please wait…' : mode === 'login' ? 'Log in' : 'Create account'}
           </button>
           {error && (
-            <p style={{ color: 'var(--alert-red)', marginBottom: 16, fontSize: '0.9rem' }}>{error}</p>
+            <p style={{ color: 'var(--gl-coral)', marginBottom: 16, fontSize: '0.9rem' }}>{error}</p>
           )}
         </form>
       )}
 
       {mode === 'signup-code' && (
         <form onSubmit={handleVerifySignupCode}>
-          <label htmlFor="signupCode" style={{ display: 'block', marginBottom: 8, fontSize: '0.9rem', color: 'var(--paper-dim)' }}>
+          <label htmlFor="signupCode" style={{ display: 'block', marginBottom: 8, fontSize: '0.9rem', color: 'var(--gl-text-muted)' }}>
             6-digit code
           </label>
           <input
@@ -185,18 +187,18 @@ export default function LoginPage() {
             placeholder="123456"
             style={{ marginBottom: 16 }}
           />
-          <button className="btn-primary" type="submit" disabled={loading} style={{ width: '100%', marginBottom: 16 }}>
+          <button className="gl-btn-primary" type="submit" disabled={loading} style={{ width: '100%', marginBottom: 16 }}>
             {loading ? 'Verifying…' : 'Verify and continue'}
           </button>
           {error && (
-            <p style={{ color: 'var(--alert-red)', marginBottom: 16, fontSize: '0.9rem' }}>{error}</p>
+            <p style={{ color: 'var(--gl-coral)', marginBottom: 16, fontSize: '0.9rem' }}>{error}</p>
           )}
         </form>
       )}
 
       {mode === 'forgot-email' && (
         <form onSubmit={handleRequestCode}>
-          <label htmlFor="email" style={{ display: 'block', marginBottom: 8, fontSize: '0.9rem', color: 'var(--paper-dim)' }}>
+          <label htmlFor="email" style={{ display: 'block', marginBottom: 8, fontSize: '0.9rem', color: 'var(--gl-text-muted)' }}>
             Email address
           </label>
           <input
@@ -208,18 +210,18 @@ export default function LoginPage() {
             placeholder="you@yourfleet.com"
             style={{ marginBottom: 16 }}
           />
-          <button className="btn-primary" type="submit" disabled={loading} style={{ width: '100%', marginBottom: 16 }}>
+          <button className="gl-btn-primary" type="submit" disabled={loading} style={{ width: '100%', marginBottom: 16 }}>
             {loading ? 'Sending…' : 'Send reset code'}
           </button>
           {error && (
-            <p style={{ color: 'var(--alert-red)', marginBottom: 16, fontSize: '0.9rem' }}>{error}</p>
+            <p style={{ color: 'var(--gl-coral)', marginBottom: 16, fontSize: '0.9rem' }}>{error}</p>
           )}
         </form>
       )}
 
       {mode === 'forgot-code' && (
         <form onSubmit={handleResetWithCode}>
-          <label htmlFor="code" style={{ display: 'block', marginBottom: 8, fontSize: '0.9rem', color: 'var(--paper-dim)' }}>
+          <label htmlFor="code" style={{ display: 'block', marginBottom: 8, fontSize: '0.9rem', color: 'var(--gl-text-muted)' }}>
             6-digit code
           </label>
           <input
@@ -232,7 +234,7 @@ export default function LoginPage() {
             placeholder="123456"
             style={{ marginBottom: 16 }}
           />
-          <label htmlFor="newPassword" style={{ display: 'block', marginBottom: 8, fontSize: '0.9rem', color: 'var(--paper-dim)' }}>
+          <label htmlFor="newPassword" style={{ display: 'block', marginBottom: 8, fontSize: '0.9rem', color: 'var(--gl-text-muted)' }}>
             New password
           </label>
           <input
@@ -245,11 +247,11 @@ export default function LoginPage() {
             placeholder="At least 6 characters"
             style={{ marginBottom: 16 }}
           />
-          <button className="btn-primary" type="submit" disabled={loading} style={{ width: '100%', marginBottom: 16 }}>
+          <button className="gl-btn-primary" type="submit" disabled={loading} style={{ width: '100%', marginBottom: 16 }}>
             {loading ? 'Saving…' : 'Set new password'}
           </button>
           {error && (
-            <p style={{ color: 'var(--alert-red)', marginBottom: 16, fontSize: '0.9rem' }}>{error}</p>
+            <p style={{ color: 'var(--gl-coral)', marginBottom: 16, fontSize: '0.9rem' }}>{error}</p>
           )}
         </form>
       )}
@@ -257,16 +259,16 @@ export default function LoginPage() {
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8, fontSize: '0.85rem' }}>
         {mode === 'login' && (
           <>
-            <button className="btn-secondary" type="button" onClick={() => switchMode('signup')}>
+            <button className="gl-btn-ghost" type="button" onClick={() => switchMode('signup')}>
               Need an account? Sign up
             </button>
-            <button className="btn-secondary" type="button" onClick={() => switchMode('forgot-email')}>
+            <button className="gl-btn-ghost" type="button" onClick={() => switchMode('forgot-email')}>
               Forgot password?
             </button>
           </>
         )}
         {mode !== 'login' && (
-          <button className="btn-secondary" type="button" onClick={() => switchMode('login')}>
+          <button className="gl-btn-ghost" type="button" onClick={() => switchMode('login')}>
             Back to log in
           </button>
         )}

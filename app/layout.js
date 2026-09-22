@@ -1,4 +1,8 @@
+import { Baloo_2, Karla } from 'next/font/google';
 import './globals.css';
+
+const baloo2 = Baloo_2({ subsets: ['latin'], weight: ['600', '700'], variable: '--font-display' });
+const karla = Karla({ subsets: ['latin'], weight: ['400', '500', '600', '700'], variable: '--font-body' });
 
 export const metadata = {
   title: 'Greenlight — Stay Green. Stay Rolling.',
@@ -7,14 +11,7 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en">
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap"
-          rel="stylesheet"
-        />
-      </head>
+    <html lang="en" className={`${baloo2.variable} ${karla.variable}`}>
       <body>{children}</body>
     </html>
   );

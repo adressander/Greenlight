@@ -3,9 +3,10 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '../../lib/supabaseClient';
-import { daysUntil, statusFor, KIND_LABELS } from '../../lib/deadlines';
+import { daysUntil, statusFor, progressPercent, CYCLE_DAYS, KIND_LABELS } from '../../lib/deadlines';
 import Link from 'next/link';
 import AddTruckForm from './AddTruckForm';
+import { TruckMark, icons, KIND_ICONS } from '../components/icons';
 
 export default function Dashboard() {
   const router = useRouter();
@@ -53,7 +54,7 @@ export default function Dashboard() {
 
   if (!session || loading) {
     return (
-      <main style={{ padding: 60, textAlign: 'center', color: 'var(--paper-dim)' }}>
+      <main style={{ padding: 60, textAlign: 'center', color: 'var(--gl-text-muted)' }}>
         Loading your dashboard…
       </main>
     );
@@ -62,20 +63,23 @@ export default function Dashboard() {
   return (
     <main style={{ maxWidth: 860, margin: '0 auto', padding: '40px 24px 80px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 36 }}>
-        <div className="display" style={{ fontSize: '1.3rem' }}>Greenlight</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <TruckMark size={26} />
+          <span className="display" style={{ fontSize: '1.3rem', color: 'var(--gl-green)' }}>Greenlight</span>
+        </div>
         <div style={{ display: 'flex', gap: 10 }}>
-          <Link href="/dashboard/settings"><button className="btn-secondary">Settings</button></Link>
-          <button className="btn-secondary" onClick={handleSignOut}>Sign out</button>
+          <Link href="/dashboard/settings"><button className="gl-btn-ghost">Settings</button></Link>
+          <button className="gl-btn-ghost" onClick={handleSignOut}>Sign out</button>
         </div>
       </div>
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '0 0 18px' }}>
-        <h1 style={{ fontSize: '1.4rem' }}>Your trucks</h1>
-        <button className="btn-primary" onClick={() => setShowAddTruck(true)}>+ Add a truck</button>
+        <h1 className="display" style={{ fontSize: '1.4rem' }}>Your trucks</h1>
+        <button className="gl-btn-primary" onClick={() => setShowAddTruck(true)}>+ Add a truck</button>
       </div>
 
       {trucks.length === 0 && !showAddTruck && (
-        <div className="card" style={{ textAlign: 'center', color: 'var(--paper-dim)' }}>
+        <div className="gl-panel" style={{ textAlign: 'center', color: 'var(--gl-text-muted)' }}>
           No trucks yet. Add one to start tracking its deadlines.
         </div>
       )}
@@ -102,72 +106,114 @@ function TruckCard({ truck, onMarkRenewed }) {
     (k) => !truck.deadlines.some((d) => d.kind === k)
   );
 
+  const sortedDeadlines = truck.deadlines.slice().sort((a, b) => daysUntil(a.due_date) - daysUntil(b.due_date));
+
   return (
-    <div className="card" style={{ marginBottom: 16 }}>
-      <div className="mono" style={{ fontSize: '0.75rem', color: 'var(--steel)', marginBottom: 14 }}>
-        {truck.nickname}{truck.mc_number ? ` — MC ${truck.mc_number}` : ''}
+    <div className="gl-card" style={{ marginBottom: 20 }}>
+      <div className="gl-card-header">
+        <div className="gl-icon-badge-lg">
+          <TruckMark size={20} />
+        </div>
+        <div className="mono" style={{ fontSize: '0.8rem', color: 'var(--gl-text-muted)', fontWeight: 600 }}>
+          {truck.nickname}{truck.mc_number ? ` — MC ${truck.mc_number}` : ''}
+        </div>
       </div>
 
-      {truck.deadlines
-        .slice()
-        .sort((a, b) => daysUntil(a.due_date) - daysUntil(b.due_date))
-        .map((d) => {
-          const days = daysUntil(d.due_date);
-          const status = statusFor(days);
-          return (
-            <DeadlineRow
-              key={d.id}
-              label={KIND_LABELS[d.kind]}
-              days={days}
-              status={status}
-              onRenew={(newDate) => onMarkRenewed(d.id, newDate)}
-            />
-          );
-        })}
+      {sortedDeadlines.map((d, i) => {
+        const days = daysUntil(d.due_date);
+        const status = statusFor(days);
+        return (
+          <DeadlineRow
+            key={d.id}
+            label={KIND_LABELS[d.kind]}
+            daysLeft={days}
+            icon={icons[KIND_ICONS[d.kind]]}
+            status={status}
+            cycleDays={CYCLE_DAYS[d.kind]}
+            isFirst={i === 0}
+            onRenew={(newDate) => onMarkRenewed(d.id, newDate)}
+          />
+        );
+      })}
 
-      {missingKinds.length > 0 && (
-        <MissingKindAdder truckId={truck.id} kinds={missingKinds} onAdded={() => window.location.reload()} />
-      )}
+      <div style={{ padding: '0 30px 24px' }}>
+        {missingKinds.length > 0 && (
+          <MissingKindAdder truckId={truck.id} kinds={missingKinds} onAdded={() => window.location.reload()} />
+        )}
+      </div>
     </div>
   );
 }
 
-function DeadlineRow({ label, days, status, onRenew }) {
+function DeadlineRow({ label, daysLeft, icon, status, cycleDays, isFirst, onRenew }) {
   const [editing, setEditing] = useState(false);
   const [newDate, setNewDate] = useState('');
-  const colorVar = status === 'red' ? 'var(--alert-red)' : status === 'yellow' ? 'var(--safety-yellow)' : 'var(--signal-green-bright)';
+  const color = `var(--gl-${status})`;
+  const tint = `var(--gl-${status}-tint)`;
+  const pct = progressPercent(daysLeft, cycleDays);
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', borderTop: '1px solid var(--hairline)' }}>
-      <span className={`pip pip-${status}`} />
-      <span style={{ flex: 1, fontWeight: 600, fontSize: '0.95rem' }}>{label}</span>
-      {editing ? (
-        <>
+    <div
+      style={{
+        padding: '12px 30px 18px',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 16,
+        borderTop: isFirst ? 'none' : '1.5px dashed var(--gl-card-border)',
+      }}
+    >
+      <div
+        style={{
+          width: 44,
+          height: 44,
+          borderRadius: 14,
+          background: '#fff',
+          border: `1.5px solid ${tint}`,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexShrink: 0,
+          color,
+        }}
+      >
+        {icon(color)}
+      </div>
+      <div style={{ flexGrow: 1 }}>
+        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
+          <span style={{ fontWeight: 700, fontSize: 15 }}>{label}</span>
+          {!editing && (
+            <span style={{ fontWeight: 700, fontSize: 13, color }}>
+              {daysLeft < 0 ? `${Math.abs(daysLeft)} days overdue` : `${daysLeft} days left`}
+            </span>
+          )}
+        </div>
+        {editing ? (
           <input
             type="date"
             value={newDate}
             onChange={(e) => setNewDate(e.target.value)}
-            style={{ width: 160 }}
+            style={{ width: 170, marginTop: 8 }}
           />
-          <button
-            className="btn-primary"
-            onClick={() => {
-              if (newDate) {
-                onRenew(newDate);
-                setEditing(false);
-              }
-            }}
-          >
-            Save
-          </button>
-        </>
+        ) : (
+          <div style={{ height: 6, borderRadius: 999, background: '#E9F5EC', marginTop: 8, overflow: 'hidden' }}>
+            <div style={{ height: '100%', width: `${pct}%`, background: color, borderRadius: 999 }} />
+          </div>
+        )}
+      </div>
+      {editing ? (
+        <button
+          className="gl-btn-mini"
+          onClick={() => {
+            if (newDate) {
+              onRenew(newDate);
+              setEditing(false);
+            }
+          }}
+        >
+          Save
+        </button>
       ) : (
-        <>
-          <span className="mono" style={{ color: colorVar, fontSize: '0.85rem' }}>
-            {days < 0 ? `${Math.abs(days)} DAYS OVERDUE` : `${days} DAYS`}
-          </span>
-          <button className="btn-secondary" onClick={() => setEditing(true)}>Mark renewed</button>
-        </>
+        <button className="gl-btn-mini" onClick={() => setEditing(true)}>Mark renewed</button>
       )}
     </div>
   );
@@ -186,21 +232,21 @@ function MissingKindAdder({ truckId, kinds, onAdded }) {
 
   if (!open) {
     return (
-      <button className="btn-secondary" style={{ marginTop: 12 }} onClick={() => setOpen(true)}>
+      <button className="gl-btn-ghost" onClick={() => setOpen(true)}>
         + Track another deadline
       </button>
     );
   }
 
   return (
-    <div style={{ marginTop: 12, display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-      <select value={kind} onChange={(e) => setKind(e.target.value)} style={{ padding: 10, background: 'var(--asphalt)', color: 'var(--paper)', border: '1px solid var(--hairline)', borderRadius: 4 }}>
+    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+      <select value={kind} onChange={(e) => setKind(e.target.value)}>
         {kinds.map((k) => (
           <option key={k} value={k}>{KIND_LABELS[k]}</option>
         ))}
       </select>
       <input type="date" value={date} onChange={(e) => setDate(e.target.value)} style={{ width: 160 }} />
-      <button className="btn-primary" onClick={handleAdd}>Add</button>
+      <button className="gl-btn-primary" onClick={handleAdd}>Add</button>
     </div>
   );
 }

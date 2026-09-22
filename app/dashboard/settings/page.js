@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '../../../lib/supabaseClient';
 import { ALERT_THRESHOLDS, DAILY_ALERT_THRESHOLD } from '../../../lib/deadlines';
+import { TruckMark } from '../../components/icons';
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -24,7 +25,7 @@ export default function SettingsPage() {
 
   if (!session || loading) {
     return (
-      <main style={{ padding: 60, textAlign: 'center', color: 'var(--paper-dim)' }}>
+      <main style={{ padding: 60, textAlign: 'center', color: 'var(--gl-text-muted)' }}>
         Loading settings…
       </main>
     );
@@ -33,11 +34,14 @@ export default function SettingsPage() {
   return (
     <main style={{ maxWidth: 720, margin: '0 auto', padding: '40px 24px 80px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 36 }}>
-        <div className="display" style={{ fontSize: '1.3rem' }}>Greenlight</div>
-        <Link href="/dashboard"><button className="btn-secondary">Back to dashboard</button></Link>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <TruckMark size={26} />
+          <span className="display" style={{ fontSize: '1.3rem', color: 'var(--gl-green)' }}>Greenlight</span>
+        </div>
+        <Link href="/dashboard"><button className="gl-btn-ghost">Back to dashboard</button></Link>
       </div>
 
-      <h1 style={{ fontSize: '1.4rem', marginBottom: 24 }}>Settings</h1>
+      <h1 className="display" style={{ fontSize: '1.4rem', marginBottom: 24 }}>Settings</h1>
 
       <AccountInfo session={session} />
       <BusinessInfo />
@@ -50,7 +54,7 @@ export default function SettingsPage() {
 
 function Section({ title, children }) {
   return (
-    <div className="card" style={{ marginBottom: 20 }}>
+    <div className="gl-panel" style={{ marginBottom: 20 }}>
       <h2 style={{ fontSize: '1rem', marginBottom: 16 }}>{title}</h2>
       {children}
     </div>
@@ -60,7 +64,7 @@ function Section({ title, children }) {
 function AccountInfo({ session }) {
   return (
     <Section title="Account">
-      <div style={{ fontSize: '0.9rem', color: 'var(--paper-dim)' }}>Email</div>
+      <div style={{ fontSize: '0.9rem', color: 'var(--gl-text-muted)' }}>Email</div>
       <div className="mono" style={{ marginBottom: 4 }}>{session.user.email}</div>
     </Section>
   );
@@ -111,7 +115,7 @@ function BusinessInfo() {
   return (
     <Section title="Business information">
       <form onSubmit={handleSave}>
-        <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--paper-dim)', marginBottom: 6 }}>
+        <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--gl-text-muted)', marginBottom: 6 }}>
           Business name
         </label>
         <input
@@ -120,7 +124,7 @@ function BusinessInfo() {
           placeholder="Your Fleet LLC"
           style={{ marginBottom: 14 }}
         />
-        <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--paper-dim)', marginBottom: 6 }}>
+        <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--gl-text-muted)', marginBottom: 6 }}>
           Business address
         </label>
         <input
@@ -129,7 +133,7 @@ function BusinessInfo() {
           placeholder="123 Freight Way, Dallas, TX"
           style={{ marginBottom: 14 }}
         />
-        <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--paper-dim)', marginBottom: 6 }}>
+        <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--gl-text-muted)', marginBottom: 6 }}>
           Business phone
         </label>
         <input
@@ -139,10 +143,10 @@ function BusinessInfo() {
           style={{ marginBottom: 16 }}
         />
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <button className="btn-primary" type="submit" disabled={saving}>
+          <button className="gl-btn-primary" type="submit" disabled={saving}>
             {saving ? 'Saving…' : 'Save'}
           </button>
-          {saved && <span className="mono" style={{ fontSize: '0.8rem', color: 'var(--signal-green-bright)' }}>Saved</span>}
+          {saved && <span className="mono" style={{ fontSize: '0.8rem', color: 'var(--gl-green)' }}>Saved</span>}
         </div>
       </form>
     </Section>
@@ -200,14 +204,14 @@ function PhoneNumbers() {
 
   return (
     <Section title="Text alert numbers">
-      <p style={{ fontSize: '0.85rem', color: 'var(--paper-dim)', marginBottom: 14 }}>
+      <p style={{ fontSize: '0.85rem', color: 'var(--gl-text-muted)', marginBottom: 14 }}>
         Every number below gets every deadline reminder text.
       </p>
 
       {phones.map((p) => (
-        <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 0', borderTop: '1px solid var(--hairline)' }}>
+        <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 0', borderTop: '1px solid var(--gl-card-border)' }}>
           <span className="mono" style={{ flex: 1 }}>{p.phone}{p.label ? ` — ${p.label}` : ''}</span>
-          <button className="btn-secondary" onClick={() => handleRemove(p.id)}>Remove</button>
+          <button className="gl-btn-ghost" onClick={() => handleRemove(p.id)}>Remove</button>
         </div>
       ))}
 
@@ -226,11 +230,11 @@ function PhoneNumbers() {
           onChange={(e) => setNewLabel(e.target.value)}
           style={{ maxWidth: 160 }}
         />
-        <button className="btn-primary" type="submit" disabled={saving}>
+        <button className="gl-btn-primary" type="submit" disabled={saving}>
           {saving ? 'Adding…' : '+ Add number'}
         </button>
       </form>
-      {error && <p style={{ color: 'var(--alert-red)', marginTop: 12, fontSize: '0.9rem' }}>{error}</p>}
+      {error && <p style={{ color: 'var(--gl-coral)', marginTop: 12, fontSize: '0.9rem' }}>{error}</p>}
     </Section>
   );
 }
@@ -310,7 +314,7 @@ function ReminderSchedule() {
 
   return (
     <Section title="Reminder schedule">
-      <p style={{ fontSize: '0.85rem', color: 'var(--paper-dim)', marginBottom: 14 }}>
+      <p style={{ fontSize: '0.85rem', color: 'var(--gl-text-muted)', marginBottom: 14 }}>
         By default, every account gets a one-time text at{' '}
         <strong>{ALERT_THRESHOLDS.join(', ')} days</strong> before a deadline, then a text{' '}
         <strong>every day starting {DAILY_ALERT_THRESHOLD} days out</strong> (through overdue).
@@ -329,7 +333,7 @@ function ReminderSchedule() {
 
         {customized && (
           <>
-            <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--paper-dim)', marginBottom: 6 }}>
+            <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--gl-text-muted)', marginBottom: 6 }}>
               One-time alerts at (days before due, comma-separated)
             </label>
             <input
@@ -338,7 +342,7 @@ function ReminderSchedule() {
               placeholder="90, 60, 30, 15"
               style={{ marginBottom: 14 }}
             />
-            <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--paper-dim)', marginBottom: 6 }}>
+            <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--gl-text-muted)', marginBottom: 6 }}>
               Start daily reminders at (days before due)
             </label>
             <input
@@ -351,12 +355,12 @@ function ReminderSchedule() {
         )}
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <button className="btn-primary" type="submit" disabled={saving}>
+          <button className="gl-btn-primary" type="submit" disabled={saving}>
             {saving ? 'Saving…' : 'Save'}
           </button>
-          {saved && <span className="mono" style={{ fontSize: '0.8rem', color: 'var(--signal-green-bright)' }}>Saved</span>}
+          {saved && <span className="mono" style={{ fontSize: '0.8rem', color: 'var(--gl-green)' }}>Saved</span>}
         </div>
-        {error && <p style={{ color: 'var(--alert-red)', marginTop: 12, fontSize: '0.9rem' }}>{error}</p>}
+        {error && <p style={{ color: 'var(--gl-coral)', marginTop: 12, fontSize: '0.9rem' }}>{error}</p>}
       </form>
     </Section>
   );
@@ -365,7 +369,7 @@ function ReminderSchedule() {
 function Billing() {
   return (
     <Section title="Billing">
-      <p style={{ fontSize: '0.85rem', color: 'var(--paper-dim)' }}>
+      <p style={{ fontSize: '0.85rem', color: 'var(--gl-text-muted)' }}>
         Billing isn't set up yet — this app is currently free while in testing.
       </p>
     </Section>

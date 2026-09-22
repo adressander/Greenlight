@@ -39,10 +39,10 @@ export default function AddTruckForm({ onClose, onCreated }) {
   }
 
   return (
-    <div className="card" style={{ marginTop: 8 }}>
+    <div className="gl-panel" style={{ marginTop: 8 }}>
       <h2 style={{ fontSize: '1.1rem', marginBottom: 18 }}>Add a truck</h2>
       <form onSubmit={handleSubmit}>
-        <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--paper-dim)', marginBottom: 6 }}>
+        <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--gl-text-muted)', marginBottom: 6 }}>
           Nickname (e.g. "Truck 4471")
         </label>
         <input
@@ -52,7 +52,7 @@ export default function AddTruckForm({ onClose, onCreated }) {
           style={{ marginBottom: 14 }}
         />
 
-        <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--paper-dim)', marginBottom: 6 }}>
+        <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--gl-text-muted)', marginBottom: 6 }}>
           MC number (optional)
         </label>
         <input
@@ -61,7 +61,7 @@ export default function AddTruckForm({ onClose, onCreated }) {
           style={{ marginBottom: 18 }}
         />
 
-        <div style={{ fontSize: '0.85rem', color: 'var(--paper-dim)', marginBottom: 10 }}>
+        <div style={{ fontSize: '0.85rem', color: 'var(--gl-text-muted)', marginBottom: 10 }}>
           Add the dates you already know. You can add the rest later.
         </div>
 
@@ -78,10 +78,10 @@ export default function AddTruckForm({ onClose, onCreated }) {
         ))}
 
         <div style={{ display: 'flex', gap: 10, marginTop: 18 }}>
-          <button className="btn-primary" type="submit" disabled={saving}>
+          <button className="gl-btn-primary" type="submit" disabled={saving}>
             {saving ? 'Saving…' : 'Save truck'}
           </button>
-          <button className="btn-secondary" type="button" onClick={onClose}>Cancel</button>
+          <button className="gl-btn-ghost" type="button" onClick={onClose}>Cancel</button>
         </div>
       </form>
     </div>
